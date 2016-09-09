@@ -10,41 +10,28 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <time.h>
-#include <pthread.h>
 
 
 #define MAX_SIZE 4096
-int clientefd, connfd;	/* descriptores */
-int ipc[2];
 
-void *lee_server(void *unused) {
-	char buf[MAX_SIZE];			/* Buffer para la lectura */
-	int nread;				/* para leer en el socket */
-	
-	/* voy leyendo TOOOOOOODO lo que me llega del server*/	
-	while ((nread=read(clientefd, buf, MAX_SIZE))>0) {
-		/* lo reenvio al gateway  */
-		write(connfd, buf, nread);
-		/* Envia al pipe de log */
-		write(ipc[1], "<", 1); /* agrego un indicador de sentido */
-		write(ipc[1], buf ,nread); 
-	}
-	exit(0);
-	//close(ipc[1]);
-	//close (clientefd);
-	//close (connfd);
-	//pthread_exit(NULL);
+void handler(void) {
+	printf ("mi pid %d \n", getpid());
+	close(ipc[1]);
+	close (clientefd);
+	close (connfd);
+	return 0;
 }
 
 
 int main(int argc, const char *argv[]) {
-	int sockfd,fdlog;			/* descriptores */
+	int sockfd, connfd, fdlog, clientefd;	/* descriptores */
 	struct sockaddr_in addr_escucha;	/* donde voy a escuchar */
 	struct sockaddr_in addr_remoto;		/* el que se conecta */
 	struct sockaddr_in addr_reenvio;	/* donde voy a reenviar */
 	socklen_t addr_len;			/* longitud de addr_escucha */
 	int opt, nread;				/* para setsockopt */
 	pid_t hijo; 				/* pid del hijo */
+	pid_t escucha_gateway; 			/* pid del otro hijo */
 	char buf[MAX_SIZE];			/* Buffer para la lectura */
 	unsigned short port_escucha, port_reenvio;
 	time_t current_time;
@@ -99,6 +86,7 @@ int main(int argc, const char *argv[]) {
 	/* Ejecuta indefinidamente la aceptacion de conexiones */
 	while ((connfd = accept(sockfd, (struct sockaddr *)&addr_remoto, &addr_len))>=0) {
 		// Uso pipes para sincronizar 
+		int ipc[2];
 		if (pipe(ipc) < 0) {
 			perror("pipe");return -1;
 		}
@@ -119,9 +107,8 @@ int main(int argc, const char *argv[]) {
 				if (current_time == ((time_t)-1)) {
 					perror ("time"); return -1;
 				}
-				snprintf(hora_actual, 11, "%ld", current_time);//(including the terminating null byte ('\0'))
-				write(fdlog, "\n", 1); //arego un enter ... para ver mejor     
-				write(fdlog, hora_actual, (sizeof (hora_actual) - 1)); /* agrego un enter.... y hora */
+				snprintf(hora_actual, 11, "%ld", current_time);
+				write(fdlog, hora_actual, sizeof hora_actual); /* agrego un enter.... y hora */
 				/* lo guardo en el archivo de log */
 				write(fdlog, buf, nread);     
 				
@@ -135,6 +122,8 @@ int main(int argc, const char *argv[]) {
 		close(ipc[0]);
 		// crea hijo para conectarse al server y proxear ....	
 		if (( hijo=fork()) == 0 ) {
+			signal(SIGUSR1, handler); // usare esto para cortar ambas conexiones .... distintos procesos .....
+			escucha_gateway = getpid();
 			close(sockfd); /* hijo cierra el socket de LISTEN */
 			/* Crea el socket de cliente */	
 			if ((clientefd = socket(PF_INET, SOCK_STREAM, 0))<0) {
@@ -152,29 +141,38 @@ int main(int argc, const char *argv[]) {
 			if (connect(clientefd, (struct sockaddr *)&addr_reenvio, sizeof(addr_reenvio))) {
 				perror("connect"); return -1;
 			}
-			pthread_t hilo; 
-			int rc;
-			/* Creo otro hilo, uno para que lea en cada lado del proxy */
-			rc = pthread_create(&hilo, NULL, lee_server , NULL );
-			if (rc){
-				printf("ERROR; pthread_create() = %d\n", rc);
-				exit(-1);
-                               }
-
+			/* otro hijo lee del server y lo reenvía al gateway */
+			if (( hijo=fork()) == 0 ) {
+				/* voy leyendo TOOOOOOODO lo que me llega del server*/	
+				while ((nread=read(clientefd, buf, MAX_SIZE))>0) {
+					/* lo reenvio al gateway  */
+					write(connfd, buf, nread);
+					/* Envia al pipe de log */
+					write(ipc[1], "<", 2); /* agrego un indicador de sentido */
+					write(ipc[1], buf ,nread); 
+				}
+				// le aviso al otro proceso que termine de proxear
+				kill(escucha_gateway ,SIGUSR1);
+				close(ipc[1]);
+				close (clientefd);
+				close (connfd);
+				return 0;
+			}
 			/* voy leyendo TOOOOOOODO lo que me llega del gateway*/	
 			while ((nread=read(connfd, buf, MAX_SIZE))>0) {
 				/* lo reenvio al server de verdad ¿? */
 				write(clientefd, buf, nread);
 				/* Envia al pipe de log */
-				write(ipc[1], ">", 1); /* agrego un indicador de comienzo de sentido */
+				write(ipc[1], "\n>", 2); /* agrego un indicador de comienzo de sentido */
 				write(ipc[1], buf, nread);
 			}
+			// le aviso al otro proceso que termine de proxear
+			kill(hijo ,SIGUSR1);
 			close(ipc[1]);
 			close (clientefd);
 			close (connfd);
 			return 0;
-		} // termina el hijo + el hilo que hace el proxeo	
-
+		} // termina el hijo que hace el proxeo	
 		// codigo del padre	
 		// no usa el pipe, ni el socket conectado
 		close(ipc[1]);
