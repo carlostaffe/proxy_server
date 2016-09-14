@@ -26,7 +26,7 @@ void *lee_server(void *unused) {
 		/* lo reenvio al gateway  */
 		write(connfd, buf, nread);
 		/* Envia al pipe de log */
-		write(ipc[1], "<", 1); /* agrego un indicador de sentido */
+		//write(ipc[1], "<", 1); /* agrego un indicador de sentido */
 		write(ipc[1], buf ,nread); 
 	}
 	exit(0);
@@ -120,8 +120,8 @@ int main(int argc, const char *argv[]) {
 					perror ("time"); return -1;
 				}
 				snprintf(hora_actual, 11, "%ld", current_time);//(including the terminating null byte ('\0'))
-				write(fdlog, "\n", 1); //arego un enter ... para ver mejor     
-				write(fdlog, hora_actual, (sizeof (hora_actual) - 1)); /* agrego un enter.... y hora */
+				//write(fdlog, "\n", 1); //arego un enter ... para ver mejor     
+				//write(fdlog, hora_actual, (sizeof (hora_actual) - 1)); /* agrego un enter.... y hora */
 				/* lo guardo en el archivo de log */
 				write(fdlog, buf, nread);     
 				
@@ -166,7 +166,7 @@ int main(int argc, const char *argv[]) {
 				/* lo reenvio al server de verdad ¿? */
 				write(clientefd, buf, nread);
 				/* Envia al pipe de log */
-				write(ipc[1], ">", 1); /* agrego un indicador de comienzo de sentido */
+			//	write(ipc[1], ">", 1); /* agrego un indicador de comienzo de sentido */
 				write(ipc[1], buf, nread);
 			}
 			close(ipc[1]);
