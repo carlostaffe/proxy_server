@@ -108,6 +108,8 @@ int main(int argc, const char *argv[]) {
 			close(sockfd); /* hijo cierra el socket de LISTEN */
 			close(connfd); /* hijo cierra el socket CONECTADO */
 			close(ipc[1]); // no escribira nada en el pipe
+			char trama[12] ; //creo un nuevo tipo de trama con el timestamp del proxy 
+
 			/* Abre el archivo de log */
 			if ((fdlog = open(argv[5], O_RDWR| O_APPEND|O_CREAT , 0660)) < 0 ) {
 				perror("open"); return -1;		
@@ -119,9 +121,14 @@ int main(int argc, const char *argv[]) {
 				if (current_time == ((time_t)-1)) {
 					perror ("time"); return -1;
 				}
-				snprintf(hora_actual, 11, "%ld", current_time);//(including the terminating null byte ('\0'))
+				snprintf(hora_actual, 9, "%lx", current_time);//(including the terminating null byte ('\0'))
+				trama[0] = 0x7e; // start of frame
+				trama[1] = 0x0a; // length ...10 bytes
+				trama[2] = 0xaa; // comando aa
+				trama[3] = 0x00; // el tapon ... diria jjo ;-)
+				strncat (trama, hora_actual,8); 
 				//write(fdlog, "\n", 1); //arego un enter ... para ver mejor     
-				//write(fdlog, hora_actual, (sizeof (hora_actual) - 1)); /* agrego un enter.... y hora */
+				write(fdlog, trama, (sizeof (trama) - 1)); /* agrego un enter.... y hora */
 				/* lo guardo en el archivo de log */
 				write(fdlog, buf, nread);     
 				

@@ -11,40 +11,36 @@
 #     char<>SOF             char<>ESC
 
 # algunas secuencias de escape
-SOF = '0x7e'
-ESC = '0x03'
-EOF = '0xa'
+SOF = '\x7e'
+ESC = '\x03'
+EOF = '\x0a'
 ESTADO = "espera"
 datos = ''
 byte = '0'
-fd = open("/tmp/proxy_server.log","r")
+#fd = open("test_bed.log","r")
+fd = open("/tmp/kk","r")
 
 #leo byte x byte
 while byte != '':
-    byte = ord(fd.read(1))
+    byte = fd.read(1)
     if ESTADO == "espera":
-        if hex(byte) == SOF :
+        if byte == SOF :
             ESTADO = "largo"
-        if hex(byte) == EOF:
+        if byte == EOF:
             break
     elif ESTADO == "largo":
-        largo = byte
+        largo = ord(byte)
         if largo == 0:
             ESTADO = "espera"
-            print "ACK"
+            print "KEEP ALIVE"
         else:
+	    print largo
             ESTADO = "datos"
     elif ESTADO == "datos":
-        datos = fd.read(largo - 2 )
-        print datos
-       # ESTADO = "check"
+        datos = byte + fd.read(largo - 2 )
+	print [hex(ord(x)) for x in datos]
         ESTADO = "espera"
 
-#    elif ESTADO == "check":
-#        print "calculo checksum "
-#        
-#        ESTADO = "espera"
-#
 #
 #    elif ESTADO == "datos":
 #        if byte == ESC :
@@ -52,5 +48,10 @@ while byte != '':
 #        elif  
 #        
 #
+
+######### impresion de la hora 
+#python -c "import datetime; print(datetime.datetime.fromtimestamp(0x57d9d79c))"
+
+
 print "final"
 fd.close()
