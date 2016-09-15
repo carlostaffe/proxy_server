@@ -48,7 +48,6 @@ int main(int argc, const char *argv[]) {
 	char buf[MAX_SIZE];			/* Buffer para la lectura */
 	unsigned short port_escucha, port_reenvio;
 	time_t current_time;
-	char hora_actual[11];
 	
 	/* Verifico el nro de argumentos */
 	if (argc != 6) {
@@ -108,12 +107,17 @@ int main(int argc, const char *argv[]) {
 			close(sockfd); /* hijo cierra el socket de LISTEN */
 			close(connfd); /* hijo cierra el socket CONECTADO */
 			close(ipc[1]); // no escribira nada en el pipe
-			char trama[12] ; //creo un nuevo tipo de trama con el timestamp del proxy 
+			char trama[7] ; //creo un nuevo tipo de trama con el timestamp del proxy 
 
 			/* Abre el archivo de log */
 			if ((fdlog = open(argv[5], O_RDWR| O_APPEND|O_CREAT , 0660)) < 0 ) {
 				perror("open"); return -1;		
 			}
+			//comienzo de la trama ... no cambia nunca
+			trama[0] = 0x7e; // start of frame
+			trama[1] = 0x06; // length ...10 bytes
+			trama[2] = 0xaa; // comando aa
+
 			// Me quedo esperando que alguien mande los datos al pipe
 			while ((nread=read(ipc[0], buf, MAX_SIZE))>0) {
 				 /* Obtener current time. */
@@ -121,12 +125,11 @@ int main(int argc, const char *argv[]) {
 				if (current_time == ((time_t)-1)) {
 					perror ("time"); return -1;
 				}
-				snprintf(hora_actual, 9, "%lx", current_time);//(including the terminating null byte ('\0'))
-				trama[0] = 0x7e; // start of frame
-				trama[1] = 0x0a; // length ...10 bytes
-				trama[2] = 0xaa; // comando aa
-				trama[3] = 0x00; // el tapon ... diria jjo ;-)
-				strncat (trama, hora_actual,8); 
+				//reordeno big endian ......	
+				trama[3] = (uint8_t)(current_time >> 24);
+				trama[4] = (uint8_t)(current_time >> 16);
+				trama[5] = (uint8_t)(current_time >> 8);
+				trama[6] = (uint8_t)current_time;
 				//write(fdlog, "\n", 1); //arego un enter ... para ver mejor     
 				write(fdlog, trama, (sizeof (trama) - 1)); /* agrego un enter.... y hora */
 				/* lo guardo en el archivo de log */
