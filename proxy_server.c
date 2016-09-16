@@ -115,7 +115,7 @@ int main(int argc, const char *argv[]) {
 			}
 			//comienzo de la trama ... no cambia nunca
 			trama[0] = 0x7e; // start of frame
-			trama[1] = 0x06; // length ...10 bytes
+			trama[1] = 0x06; // length ...6 bytes
 			trama[2] = 0xaa; // comando aa
 
 			// Me quedo esperando que alguien mande los datos al pipe
