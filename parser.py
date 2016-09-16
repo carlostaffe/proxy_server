@@ -17,8 +17,7 @@ EOF = '\x0a'
 ESTADO = "espera"
 datos = ''
 byte = '0'
-#fd = open("test_bed.log","r")
-fd = open("/tmp/kk","r")
+fd = open("test_bed.log","r")
 
 #leo byte x byte
 while byte != '':

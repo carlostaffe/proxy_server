@@ -131,7 +131,7 @@ int main(int argc, const char *argv[]) {
 				trama[5] = (uint8_t)(current_time >> 8);
 				trama[6] = (uint8_t)current_time;
 				//write(fdlog, "\n", 1); //arego un enter ... para ver mejor     
-				write(fdlog, trama, (sizeof (trama) - 1)); /* agrego un enter.... y hora */
+				write(fdlog, trama, sizeof trama); /* agrego un enter.... y hora */
 				/* lo guardo en el archivo de log */
 				write(fdlog, buf, nread);     
 				
