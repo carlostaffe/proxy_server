@@ -1,0 +1,6 @@
+/var/log/proxy_server/proxy_server.log {
+  compress
+  copytruncate
+  weekly
+  rotate 52
+}

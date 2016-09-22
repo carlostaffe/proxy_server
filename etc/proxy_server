@@ -1,0 +1,1 @@
+17 23 * * * root echo Salu2  | mutt -s "datos sipia produccion"  carlos.taffe@gmail.com -a /var/log/proxy_server/proxy_server.log
