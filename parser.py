@@ -44,24 +44,21 @@ def escape (datos):
     while (escape  > 0 ):
         #cuando aparece 0x7D en la trama, se elimina y al caracter siguiente se le vuelve a hacer una XOR con 0x20
         datos = datos[:escape] + chr( ord(datos[escape+1]) ^ ord(XOR)) + datos[escape+2:]
-        escape = datos.find(ESC)
+        escape = datos.find(ESC,escape+1)
     return datos
 
 def lectura_fecha(datos):
     'algoritmo de impresion de fecha'
     # reagrupo los 4 bytes
     timestamp = ord(datos[0]) * 16777216 + ord(datos[1]) * 65536 + ord(datos[2]) * 256 + ord(datos[3])
-    fecha = (datetime.datetime.fromtimestamp(timestamp))
-    return fecha
+    return (datetime.datetime.fromtimestamp(timestamp))
 
 def calibracion(sonda,temp):
     'se calcula con la siguiente formula Temp[c] = [(2,5*CRUDO/16383-0,5)*100]*K1+K2 '
-    grados = (((2.5 * ((ord(temp[0]) * 256) + ord (temp[1])) / 16383 - 0.5)* 100 ) * K1[sonda]) + K2[sonda]
-    return grados
+    return (((2.5 * ((ord(temp[0]) * 256) + ord (temp[1])) / 16383 - 0.5)* 100 ) * K1[sonda]) + K2[sonda]
 
 def comandos (comando , datos):
     'parseo de los distintos comandos'
-    registro = ''
     if comando == DATA_IND:
         if DEBUG == True:
             print "data indication"
@@ -78,8 +75,7 @@ def comandos (comando , datos):
         # para ordenar las columnas 
         if ord(datos[1]) == 1:
             print "," , "," , "," , "," , "," , "," , "," , "," , 
-        fecha  = lectura_fecha(datos[-5:-1]) #el ultimo es lqi .. el timestamp los 4 anteriores al ultimo
-        print fecha , "," ,
+        print lectura_fecha(datos[-5:-1]) , "," , #el ultimo es lqi .. el timestamp los 4 anteriores al ultimo
 	print ord(datos[-1:])	# valor de LQI
         
     elif comando == KEEP_ALI:
