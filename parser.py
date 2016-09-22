@@ -18,6 +18,7 @@ EOF = '\x0a'
 XOR = '\x20'
 #Comandos
 DATA_IND ='\x03' 
+STATUS_IND ='\x05' 
 COMM_IND ='\x06' 
 KEEP_ALI ='\x00' 
 TIME_PRX ='\xaa' 
@@ -51,32 +52,35 @@ def lectura_fecha(datos):
     'algoritmo de impresion de fecha'
     # reagrupo los 4 bytes
     timestamp = ord(datos[0]) * 16777216 + ord(datos[1]) * 65536 + ord(datos[2]) * 256 + ord(datos[3])
-    return (datetime.datetime.fromtimestamp(timestamp))
+    return  (datetime.datetime.fromtimestamp(timestamp))
 
 def calibracion(sonda,temp):
     'se calcula con la siguiente formula Temp[c] = [(2,5*CRUDO/16383-0,5)*100]*K1+K2 '
     return (((2.5 * ((ord(temp[0]) * 256) + ord (temp[1])) / 16383 - 0.5)* 100 ) * K1[sonda]) + K2[sonda]
+
+#################################################################
 
 def comandos (comando , datos):
     'parseo de los distintos comandos'
     if comando == DATA_IND:
         if DEBUG == True:
             print "data indication"
-        print  ord(datos[1]) , ',' ,
-        # para ordenar las columnas 
-        if ord(datos[1]) == 2:
-            print "," , "," , "," , "," , "," , "," , "," , "," , 
+#        print  ord(datos[1]) , ',' , # el nro de mote
         i = 0
         while i < ord (datos[3]):
-            print datos[4+3*i],  ',' ,
+            registro = datos[4+3*i] + ',' 
             temp = calibracion(datos[4+3*i], datos[5+3*i:7+3*i])
-            print temp , ',' ,
+            fecha =  lectura_fecha(datos[-5:-1]) 
+            registro = registro + fecha.strftime('%d-%m-%Y') + ','  
+            registro = registro + fecha.strftime('%H:%M:%S') +  ',' 
+            registro = registro + str (temp)
+            print registro 
             i = i + 1
-        # para ordenar las columnas 
-        if ord(datos[1]) == 1:
-            print "," , "," , "," , "," , "," , "," , "," , "," , 
-        print lectura_fecha(datos[-5:-1]) , "," , #el ultimo es lqi .. el timestamp los 4 anteriores al ultimo
-	print ord(datos[-1:])	# valor de LQI
+#           print ord(datos[-1:])	# valor de LQI
+
+    elif comando == STATUS_IND:
+        if DEBUG == True:
+            print "status indicaalive"
         
     elif comando == KEEP_ALI:
         if DEBUG == True:
@@ -92,7 +96,8 @@ def comandos (comando , datos):
 
 
 fd = open("proxy_server.log","r")
-
+#etiqueta
+print "etiqueta,fecha,hora,temperatura"
 #leo byte x byte
 while byte != EOF:
     byte = fd.read(1)
