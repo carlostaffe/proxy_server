@@ -1,6 +1,8 @@
 #!/usr/bin/python
 import datetime
 import time
+import sys
+import getopt
 #                          char<>DLE and char<>ETX
 #     _______________________________
 #    |    largo = 0 \                \
@@ -18,8 +20,8 @@ EOF = '\x0a'
 XOR = '\x20'
 #Comandos
 DATA_IND ='\x03' 
-STATUS_IND ='\x05' 
 COMM_IND ='\x06' 
+STATUS_IND ='\x05' 
 KEEP_ALI ='\x00' 
 TIME_PRX ='\xaa' 
 #Algunas configs iniciales
@@ -84,7 +86,8 @@ def comandos (comando , datos):
             registro = registro + fecha.strftime('%d-%m-%Y') + ','  
             registro = registro + fecha.strftime('%H:%M:%S') +  ',' 
             registro = registro + str (temp)
-            print registro 
+            if salida == 't': #datos de temperatura
+                print registro 
             i = i + 1
 #           print ord(datos[-1:])	# valor de LQI
 
@@ -101,13 +104,44 @@ def comandos (comando , datos):
     elif comando == COMM_IND:
         if DEBUG == True:
             print "command indication"
+        if datos[0] == STATUS_IND :
+            #print "nivel de bateria"
+            registro = str(ord(datos[1])) + str(ord(datos[2])) + ',' 
+            bateria = (ord(datos[3]) * 256) + ord(datos[4])  # en milivolts
+            registro = registro + str(bateria) + ','
+            fecha =  lectura_fecha(datos[5:]) 
+            registro = registro + fecha.strftime('%d-%m-%Y') + ','
+            registro = registro + fecha.strftime('%H:%M:%S')  
+            if salida == 'v': #datos de tension 
+                print registro 
     return
 
+###################################################################################
+myopts, args = getopt.getopt(sys.argv[1:],"vd:")
+salida = ' '  
+###############################
+# o == option
+# a == argument passed to the o
+###############################
+for o, a in myopts:
+    if o == '-v':
+       DEBUG=True; 
+    elif o == '-d':
+        if a != 't' and a !='v' :
+            print("Usage: %s -d [t|v] -v " % sys.argv[0])
+            exit()
+        salida = a 
 
+if salida == ' ' :
+    print("Usage: %s -d [t|v] -v" % sys.argv[0])
+    exit()
 
 fd = open("proxy_server.log","r")
 #etiqueta
-print "etiqueta,fecha,hora,temperatura"
+if salida == 't': #datos de temperatura
+    print "etiqueta,fecha,hora,temperatura"
+if salida == 'v': #datos de tension 
+    print "nodo,tension,fecha,hora"
 #leo byte x byte
 while byte != EOF:
     byte = fd.read(1)
