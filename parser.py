@@ -152,7 +152,7 @@ while byte != EOF and len(byte) != 0:
             ESTADO = "length"
     elif ESTADO == "length":
         largo = ord(byte)
-#        print largo
+        #print largo
         if largo == 0:
             comandos(KEEP_ALI,'')
             # volvemos a leer de a 1 byte ......

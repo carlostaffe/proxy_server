@@ -50,11 +50,12 @@ int main(int argc, const char *argv[]) {
 	time_t current_time;
 	
 	/* Verifico el nro de argumentos */
-	if (argc != 6) {
-		fprintf(stderr, "Uso: %s <ip_escucha> <puerto_escucha> <ip_reenvio> <puerto_reenvio> <archivo_log>\n",
+	if ( argc != 6 && argc != 8 ) {
+		fprintf(stderr, "Uso: %s <ip_escucha> <puerto_escucha> <ip_reenvio> <puerto_reenvio> <archivo_log> <ip_grafica> <puerto_grafica> \n",
 				argv[0]);
 		return 1;
 	}
+	
  	/* Crea el socket de escucha */	
 	if ((sockfd = socket(PF_INET, SOCK_STREAM, 0))<0) {
 		perror("socket"); return 1;		
@@ -103,38 +104,85 @@ int main(int argc, const char *argv[]) {
 		}
 
 		/* hijo lee del pipe para asegurar atomicidad en la escritura del archivo */
+		/* ademas intenta conectarse a un servidor de graficos ... pa' mandarle los datos */
 		if (( hijo=fork()) == 0 ) {
 			close(sockfd); /* hijo cierra el socket de LISTEN */
 			close(connfd); /* hijo cierra el socket CONECTADO */
 			close(ipc[1]); // no escribira nada en el pipe
-			char trama[7] ; //creo un nuevo tipo de trama con el timestamp del proxy 
-
+			char trama[11] ; //creo un nuevo tipo de trama con el timestamp del proxy 
+                        
 			/* Abre el archivo de log */
 			if ((fdlog = open(argv[5], O_RDWR| O_APPEND|O_CREAT , 0660)) < 0 ) {
 				perror("open"); return -1;		
 			}
+			struct sockaddr_in addr_server;		/* el que se conecta */
+			int serverfd;
+			int i;
+			// crea el socket cliente para mandar datos */
+			if ((serverfd = socket(PF_INET, SOCK_STREAM, 0))<0) {
+				perror("socket"); return 1;		
+			}
+
+			/* Inicializa y configura la estructura de socket a conectarse */ 
+			if ( argc == 6 ) {
+				inet_pton(AF_INET,"127.0.0.1", &addr_server.sin_addr);
+				addr_server.sin_port = htons(atoi("5000"));
+			}	
+			if ( argc == 8 ) {
+				inet_pton(AF_INET,argv[6], &addr_server.sin_addr);
+				addr_server.sin_port = htons(atoi(argv[7]));
+			}
+			addr_server.sin_family = AF_INET;
 			//comienzo de la trama ... no cambia nunca
 			trama[0] = 0x7e; // start of frame
-			trama[1] = 0x06; // length ...6 bytes
 			trama[2] = 0xaa; // comando aa
-
 			// Me quedo esperando que alguien mande los datos al pipe
 			while ((nread=read(ipc[0], buf, MAX_SIZE))>0) {
+				i = 3 ;
 				 /* Obtener current time. */
 				current_time = time(NULL);
 				if (current_time == ((time_t)-1)) {
 					perror ("time"); return -1;
 				}
 				//reordeno big endian ......	
-				trama[3] = (uint8_t)(current_time >> 24);
-				trama[4] = (uint8_t)(current_time >> 16);
-				trama[5] = (uint8_t)(current_time >> 8);
-				trama[6] = (uint8_t)current_time;
-				//write(fdlog, "\n", 1); //arego un enter ... para ver mejor     
-				write(fdlog, trama, sizeof trama); /* agrego un enter.... y hora */
+				trama[i] = (uint8_t)(current_time >> 24);
+				if (trama[i] == 0x7e || trama[i] == 0x7d ){
+					trama[i+1] = trama[i] ^ 0x20;
+					trama[i] = 0x7d;
+					i = i + 1;
+				}
+				i = i + 1;
+				trama[i] = (uint8_t)(current_time >> 16);
+				if (trama[i] == 0x7e || trama[i] == 0x7d ){
+					trama[i+1] = trama[i] ^ 0x20;
+					trama[i] = 0x7d;
+					i = i + 1;
+				}
+				i = i + 1;
+				trama[i] = (uint8_t)(current_time >> 8);
+				if (trama[i] == 0x7e || trama[i] == 0x7d ){
+					trama[i+1] = trama[i] ^ 0x20;
+					trama[i] = 0x7d;
+					i = i + 1;
+				}
+				i = i + 1;
+				trama[i] = (uint8_t)current_time;
+				if (trama[i] == 0x7e || trama[i] == 0x7d ){
+					trama[i+1] = trama[i] ^ 0x20;
+					trama[i] = 0x7d;
+					i = i + 1;
+				}
+				trama[1] = i % 16; // length ...6 bytes ... a no ser que vayan escapes .... ver representacion ascii
+				i = i + 1;
+				write(fdlog, trama, i); 
 				/* lo guardo en el archivo de log */
-				write(fdlog, buf, nread);     
-				
+				write(fdlog, buf, nread);    
+				/* intenta conectarse a un socket server para mandar los datos .... una conexion por lectura */
+				if (connect(serverfd, (struct sockaddr *)&addr_server,sizeof(addr_server) ) == 0 ){
+					write (serverfd,buf, nread);
+					close(serverfd);
+				}
+					 
 			}
 			close(ipc[0]);
 			close (fdlog); // cierro el archivo de log, una vez que cierren las escrituras en los pipes 
