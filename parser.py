@@ -117,8 +117,9 @@ def comandos (comando , datos):
     return
 
 ###################################################################################
-myopts, args = getopt.getopt(sys.argv[1:],"vd:")
+myopts, args = getopt.getopt(sys.argv[1:],"vd:i:")
 salida = ' '  
+archivo= ' ' 
 ###############################
 # o == option
 # a == argument passed to the o
@@ -128,22 +129,23 @@ for o, a in myopts:
        DEBUG=True; 
     elif o == '-d':
         if a != 't' and a !='v' :
-            print("Usage: %s -d [t|v] -v " % sys.argv[0])
+            print("Usage: %s -d option support only t(ension) or v(oltaje) argument" % sys.argv[0])
             exit()
         salida = a 
-
-if salida == ' ' :
-    print("Usage: %s -d [t|v] -v" % sys.argv[0])
+    elif o == '-i':
+       archivo = a
+if salida == ' ' or archivo == ' '  :
+    print("Usage: %s -d [t|v] -v -i file" % sys.argv[0])
     exit()
 
-fd = open("proxy_server.log","r")
+fd = open(archivo, "r")
 #etiqueta
 if salida == 't': #datos de temperatura
     print "etiqueta,fecha,hora,temperatura"
 if salida == 'v': #datos de tension 
     print "nodo,tension,fecha,hora"
 #leo byte x byte
-while byte != EOF:
+while byte != EOF and len(byte) != 0:
     byte = fd.read(1)
     if ESTADO == "waiting":
         if byte == SOF :
