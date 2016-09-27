@@ -118,10 +118,6 @@ int main(int argc, const char *argv[]) {
 			struct sockaddr_in addr_server;		/* el que se conecta */
 			int serverfd;
 			int i;
-			// crea el socket cliente para mandar datos */
-			if ((serverfd = socket(PF_INET, SOCK_STREAM, 0))<0) {
-				perror("socket"); return 1;		
-			}
 
 			/* Inicializa y configura la estructura de socket a conectarse */ 
 			if ( argc == 6 ) {
@@ -177,6 +173,10 @@ int main(int argc, const char *argv[]) {
 				write(fdlog, trama, i); 
 				/* lo guardo en el archivo de log */
 				write(fdlog, buf, nread);    
+				// crea el socket cliente para mandar datos */
+				if ((serverfd = socket(PF_INET, SOCK_STREAM, 0))<0) {
+					perror("socket"); return 1;		
+				}
 				/* intenta conectarse a un socket server para mandar los datos .... una conexion por lectura */
 				if (connect(serverfd, (struct sockaddr *)&addr_server,sizeof(addr_server) ) == 0 ){
 					write (serverfd,buf, nread);
