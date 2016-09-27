@@ -1,4 +1,3 @@
-
 instalacion:
 
 make clean
@@ -20,6 +19,9 @@ cuando quiera obtener los archivos .csv, ejecutar
 ./parser > archivo.csv
 
 Para logrotate, copiar el archivo etc/logrotate.d/proxy_server al /etc/logrotate.d
+
+en la configuracion, antes de hacer el logrotate, genera los archivos .cvs de tension y 
+temperatura y los envia por correo
 
 Si quiero que me mande mails diariamente con el archivo server.log,
 copiar el archivo etc/cron.d/proxy_server al /etc/cron.d/
