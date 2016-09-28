@@ -66,21 +66,27 @@ def comandos (comando , datos, salida):
             print "data indication"
 #        print  ord(datos[1]) , ',' , # el nro de mote
         i = 0
+        registro = ''
+        arreglo= range(5*ord(datos[3])) 
         while i < ord (datos[3]):
-            registro = datos[4+3*i] + ',' 
+            registro = registro + datos[4+3*i] + ',' 
             temp = calibracion(datos[4+3*i], datos[5+3*i:7+3*i])
             fecha =  lectura_fecha(datos[-5:-1]) 
             registro = registro + fecha.strftime('%d-%m-%Y') + ','  
             registro = registro + fecha.strftime('%H:%M:%S') +  ',' 
-            registro = registro + str (temp)
-            if salida == 't': #datos de temperatura
-                print registro 
+            registro = registro + str (temp) + '\n'
             if salida == 'g': #grafica datos de temperatura
-                print temp
-                print temp 
-                print fecha
-                print 'Temperatura sonda' , datos[4+3*i]
+                arreglo[0+(i*5)] = 'T' + datos[4+3*i]
+                arreglo[1+(i*5)] = str(temp)
+                arreglo[2+(i*5)] = str(temp)
+                arreglo[3+(i*5)] = fecha
+                arreglo[4+(i*5)] = 'Temperatura sonda ' + datos[4+3*i]
             i = i + 1
+        if salida == 't': #datos de temperatura
+            return registro[:-1]
+        elif salida == 'g':
+            return arreglo
+        return 
 #           print ord(datos[-1:])	# valor de LQI
 
     elif comando == STATUS_IND:
@@ -98,6 +104,8 @@ def comandos (comando , datos, salida):
             print "command indication"
         if datos[0] == STATUS_IND :
             #print "nivel de bateria"
+            registro = ''
+            arreglo= range(5) 
             registro = str(ord(datos[1])) + str(ord(datos[2])) + ',' 
             bateria = (ord(datos[3]) * 256) + ord(datos[4])  # en milivolts
             registro = registro + str(bateria) + ','
@@ -105,11 +113,14 @@ def comandos (comando , datos, salida):
             registro = registro + fecha.strftime('%d-%m-%Y') + ','
             registro = registro + fecha.strftime('%H:%M:%S')  
             if salida == 'v': #datos de tension 
-                print registro 
-            if salida == 'g': #grafica datos de temperatura
-                print bateria
-                print bateria
-                print fecha
-                print 'Tension nodo' , str(ord(datos[2]))
+                return registro 
+            elif salida == 'g': #grafica datos de temperatura
+                arreglo[0] = 'V' + str(ord(datos[2]))
+                arreglo[1] = bateria
+                arreglo[2] = bateria
+                arreglo[3] = fecha
+                arreglo[4] = 'Tension nodo ' + str(ord(datos[2]))
+                return arreglo
+                
     return
 

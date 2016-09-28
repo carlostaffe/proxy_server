@@ -61,7 +61,9 @@ while byte != EOF and len(byte) != 0:
         datos = byte + fd.read(largo - 2 )
         if datos[0] == DATA_IND : # hasta que arregle el server
             datos = escape(datos) # saca los escapes :-)
-        comandos(datos[0], datos[1:],salida) # mando el comando y los datos restantes 
+        registro = comandos(datos[0], datos[1:],salida) # mando el comando y los datos restantes 
+        if registro != None :
+            print registro
         if DEBUG == True :
             print [hex(ord(x)) for x in datos]
 
