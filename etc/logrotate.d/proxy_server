@@ -1,0 +1,10 @@
+/var/log/proxy_server/proxy_server.log {
+  compress
+  copytruncate
+  weekly
+  rotate 52
+  prerotate
+    /root/proxy_server/parser.py -d t -i /var/log/proxy_server/proxy_server.log > /tmp/temperatura.csv ; echo Salu2  | mutt -s "temperaturas sipia produccion"  carlos.taffe@gmail.com -a /tmp/temperatura.csv
+    /root/proxy_server/parser.py -d v -i /var/log/proxy_server/proxy_server.log > /tmp/tension.csv ; echo Salu2  | mutt -s "tensiones sipia produccion"  carlos.taffe@gmail.com -a /tmp/tension.csv
+  endscript
+}
