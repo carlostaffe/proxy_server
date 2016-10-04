@@ -1,1 +1,2 @@
-17 23 * * * root echo Salu2  | mutt -s "datos sipia produccion"  carlos.taffe@gmail.com -a /var/log/proxy_server/proxy_server.log
+# Comentado ... solo era para obtener datos de prueba mientras desarrollaba el parser del protocolo
+#17 23 * * * root echo Salu2  | mutt -s "datos sipia produccion"  carlos.taffe@gmail.com -a /var/log/proxy_server/proxy_server.log

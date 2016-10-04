@@ -77,8 +77,8 @@ def comandos (comando , datos, salida):
             registro = registro + str (temp) + '\n'
             if salida == 'g': #grafica datos de temperatura
                 arreglo[0+(i*5)] = 'T' + datos[4+3*i]
-                arreglo[1+(i*5)] = str(temp)
-                arreglo[2+(i*5)] = str(temp)
+                arreglo[1+(i*5)] = str(temp*1000) # expresado en Mili Celsius :-)
+                arreglo[2+(i*5)] = str(temp*1000) # expresado en Mili Celsius :-)
                 arreglo[3+(i*5)] = fecha
                 arreglo[4+(i*5)] = 'Temperatura sonda ' + datos[4+3*i]
             i = i + 1
