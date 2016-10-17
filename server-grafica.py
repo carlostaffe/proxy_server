@@ -28,7 +28,7 @@ while 1:
                    i = 0
                    while i < len(salida)/5:
                        if salida[0+(i*5)] != (i*5):
-                           sys.stdout = open(salida[0+(i*5)]+'.txt' , "w")
+                           sys.stdout = open('/root/server-grafica/'+salida[0+(i*5)]+'.txt' , "w")
                            print salida[1+(i*5)] 
                            print salida[2+(i*5)] 
                            print salida[3+(i*5)] 
